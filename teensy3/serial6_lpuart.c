@@ -93,7 +93,7 @@ static volatile uint8_t rx_buffer_head = 0;
 static volatile uint8_t rx_buffer_tail = 0;
 #endif
 
-static uint8_t tx_pin_num = 34;
+static uint8_t tx_pin_num = 48;
 
 // UART0 and UART1 are clocked by F_CPU, UART2 is clocked by F_BUS
 // UART0 has 8 byte fifo, UART1 and UART2 have 1 byte buffer
@@ -103,16 +103,16 @@ void serial6_begin(uint32_t desiredBaudRate)
 {
 	#define F_LPUART_CLOCK_SPEED  48000000 //F_BUS
 	// Make sure the clock for this uart is enabled, else the registers are not
-	// vailable. 
+	// vailable.
 	SIM_SCGC2 |= SIM_SCGC2_LPUART0; 	// Turn on the clock
 
 	// Convert the baud rate to best divisor and OSR, based off of code I found in posting
-	// try to find an OSR > 4 with the minimum difference from the actual disired baud rate. 
+	// try to find an OSR > 4 with the minimum difference from the actual disired baud rate.
     uint16_t sbr, sbrTemp, osrCheck;
     uint32_t osr, baudDiffCheck, calculatedBaud, baudDiff;
     uint32_t clockSpeed;
 
-    // First lets figure out what the LPUART Clock speed is. 
+    // First lets figure out what the LPUART Clock speed is.
     uint32_t PLLFLLSEL = SIM_SOPT2 & SIM_SOPT2_IRC48SEL;	// Note: Bot bits on here
 
     if (PLLFLLSEL == SIM_SOPT2_IRC48SEL)
@@ -121,7 +121,7 @@ void serial6_begin(uint32_t desiredBaudRate)
     	clockSpeed = F_PLL;		// Using PLL clock
     else
     	clockSpeed = F_CPU/4;	// FLL clock, guessing
- 
+
     osr = 4;
     sbr = (clockSpeed/(desiredBaudRate * osr));
     /*set sbr to 1 if the clockSpeed can not satisfy the desired baud rate*/
@@ -157,7 +157,7 @@ void serial6_begin(uint32_t desiredBaudRate)
         if (baudDiffCheck <= baudDiff) {
             baudDiff = baudDiffCheck;
             osr = osrCheck;
-            sbr = sbrTemp; 
+            sbr = sbrTemp;
         }
         // Lets try the rounded up one as well
         if (baudDiffCheck) {
@@ -166,14 +166,14 @@ void serial6_begin(uint32_t desiredBaudRate)
           if (baudDiffCheck <= baudDiff) {
               baudDiff = baudDiffCheck;
               osr = osrCheck;
-              sbr = sbrTemp; 
+              sbr = sbrTemp;
           }
         }
     }
 	// for lower OSR <= 7x turn on both edge sampling
 	uint32_t lpb = LPUART_BAUD_OSR(osr-1) | LPUART_BAUD_SBR(sbr);
     if (osr < 8) {
-      lpb |= LPUART_BAUD_BOTHEDGE; 
+      lpb |= LPUART_BAUD_BOTHEDGE;
     }
 	LPUART0_BAUD = lpb;
 
@@ -200,7 +200,7 @@ void serial6_format(uint32_t format)
 {
 	uint32_t c;
 
-	// Bits 0-2 - Parity plus 9  bit. 
+	// Bits 0-2 - Parity plus 9  bit.
 	c = LPUART0_CTRL;
 	//c = (c & ~(LPUART_CTRL_M | LPUART_CTRL_PE | LPUART_CTRL_PT)) | (format & (LPUART_CTRL_PE | LPUART_CTRL_PT));	// configure parity
 	//if (format & 0x04) c |= LPUART_CTRL_M;		// 9 bits (might include parity)
@@ -212,8 +212,8 @@ void serial6_format(uint32_t format)
 	// Bit 3 10 bit - Will assume that begin already cleared it.
 	if (format & 0x08)
 		LPUART0_BAUD |= LPUART_BAUD_M10;
-	
-	// Bit 4 RXINVERT 
+
+	// Bit 4 RXINVERT
 	c = LPUART0_STAT & ~LPUART_STAT_RXINV;
 	if (format & 0x10) c |= LPUART_STAT_RXINV;		// rx invert
 	LPUART0_STAT = c;
@@ -224,7 +224,7 @@ void serial6_format(uint32_t format)
 	LPUART0_CTRL = c;
 
 	// For T3.6 See about turning on 2 stop bit mode
-	if ( format & 0x100) LPUART0_BAUD |= LPUART_BAUD_SBNS;	
+	if ( format & 0x100) LPUART0_BAUD |= LPUART_BAUD_SBNS;
 }
 
 void serial6_end(void)
@@ -254,7 +254,7 @@ void serial6_set_tx(uint8_t pin, uint8_t opendrain)
 
 	if (opendrain) pin |= 128;
 	if (pin == tx_pin_num) return;
-	if ((SIM_SCGC4 & SIM_SCGC4_UART2)) {
+	if ((SIM_SCGC2 & SIM_SCGC2_LPUART0)) {
 		switch (tx_pin_num & 127) {
 			case 48:  CORE_PIN48_CONFIG = 0; break; // PTE24
 		}
@@ -264,7 +264,7 @@ void serial6_set_tx(uint8_t pin, uint8_t opendrain)
 			cfg = PORT_PCR_DSE | PORT_PCR_SRE;
 		}
 		switch (pin & 127) {
-			case 48:  CORE_PIN48_CONFIG = cfg | PORT_PCR_MUX(3); break;
+			case 48:  CORE_PIN48_CONFIG = cfg | PORT_PCR_MUX(5); break;
 		}
 	}
 	tx_pin_num = pin;
@@ -291,8 +291,10 @@ int serial6_set_rts(uint8_t pin)
 int serial6_set_cts(uint8_t pin)
 {
 	if (!(SIM_SCGC2 & SIM_SCGC2_LPUART0)) return 0;
-	if (pin == 56) {
-		CORE_PIN56_CONFIG = PORT_PCR_MUX(3) | PORT_PCR_PE; // weak pulldown
+	if (pin == 55) {
+		CORE_PIN55_CONFIG = PORT_PCR_MUX(5) | PORT_PCR_PE; // weak pulldown
+	else if(pin == 56) {
+		CORE_PIN56_CONFIG = PORT_PCR_MUX(5) | PORT_PCR_PE; // weak pulldown
 	} else {
 		UART5_MODEM &= ~UART_MODEM_TXCTSE;
 		return 0;
@@ -442,7 +444,7 @@ void lpuart0_status_isr(void)
 		if (head == tail) {
 			BITBAND_CLR_BIT(LPUART0_CTRL, TIE_BIT);
 			BITBAND_SET_BIT(LPUART0_CTRL, TCIE_BIT);
-			//LPUART0_CTRL &= ~LPUART_CTRL_TIE; 
+			//LPUART0_CTRL &= ~LPUART_CTRL_TIE;
   			//LPUART0_CTRL |= LPUART_CTRL_TCIE; // Actually wondering if we can just leave this one on...
 		} else {
 			if (++tail >= SERIAL6_TX_BUFFER_SIZE) tail = 0;
@@ -460,4 +462,4 @@ void lpuart0_status_isr(void)
 	}
 }
 
-#endif // HAS_KINETISK_UART4
+#endif // HAS_KINETISK_LPUART0

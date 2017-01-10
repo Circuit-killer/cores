@@ -121,6 +121,7 @@ void serial_begin(uint32_t divisor)
 		case 21: CORE_PIN21_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(3); break;
 		#if defined(KINETISL)
 		case 3:  CORE_PIN3_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(2); break;
+		case 25: CORE_PIN25_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(4); break;
 		#endif
 		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		case 27: CORE_PIN27_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(3); break;
@@ -131,6 +132,7 @@ void serial_begin(uint32_t divisor)
 		case 5:  CORE_PIN5_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3); break;
 		#if defined(KINETISL)
 		case 4:  CORE_PIN4_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(2); break;
+		case 24: CORE_PIN24_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(4); break;
 		#endif
 		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		case 26: CORE_PIN26_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3); break;
@@ -196,11 +198,42 @@ void serial_end(void)
 	while (transmitting) yield();  // wait for buffered data to send
 	NVIC_DISABLE_IRQ(IRQ_UART0_STATUS);
 	UART0_C2 = 0;
-	CORE_PIN0_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
-	CORE_PIN1_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
+	switch (rx_pin_num) {
+		case 0:  CORE_PIN0_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		case 21: CORE_PIN21_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#if defined(KINETISL)
+		case 3:  CORE_PIN3_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		case 25: CORE_PIN25_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#endif
+		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		case 27: CORE_PIN27_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#endif
+	}
+	switch (tx_pin_num) {
+		case 1:  CORE_PIN1_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		case 5:  CORE_PIN5_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#if defined(KINETISL)
+		case 4:  CORE_PIN4_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		case 24: CORE_PIN24_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#endif
+		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		case 26: CORE_PIN26_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break;
+		#endif
+	}
 	rx_buffer_head = 0;
 	rx_buffer_tail = 0;
 	if (rts_pin) rts_deassert();
+
+#if defined(KINETISK)
+	if (CORE_PIN18_CONFIG & PORT_PCR_MUX(3)) {
+		CORE_PIN18_CONFIG = 0;
+	} else if (CORE_PIN20_CONFIG & PORT_PCR_MUX(3)) {
+		CORE_PIN20_CONFIG = 0;
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	} else if (CORE_PIN28_CONFIG & PORT_PCR_MUX(3)) {
+		CORE_PIN28_CONFIG = 0;
+#endif
+#endif
 }
 
 void serial_set_transmit_pin(uint8_t pin)
@@ -320,6 +353,10 @@ int serial_set_cts(uint8_t pin)
 		CORE_PIN18_CONFIG = PORT_PCR_MUX(3) | PORT_PCR_PE; // weak pulldown
 	} else if (pin == 20) {
 		CORE_PIN20_CONFIG = PORT_PCR_MUX(3) | PORT_PCR_PE; // weak pulldown
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	} else if (pin == 28) {
+		CORE_PIN28_CONFIG = PORT_PCR_MUX(3) | PORT_PCR_PE; // weak pulldown
+#endif
 	} else {
 		UART0_MODEM &= ~UART_MODEM_TXCTSE;
 		return 0;
@@ -624,4 +661,3 @@ void serial_phex32(uint32_t n)
 	serial_phex(n >> 8);
 	serial_phex(n);
 }
-

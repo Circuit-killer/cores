@@ -159,15 +159,13 @@ void serial4_end(void)
 	while (transmitting) yield();  // wait for buffered data to send
 	NVIC_DISABLE_IRQ(IRQ_UART3_STATUS);
 	UART3_C2 = 0;
-	CORE_PIN31_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
-	CORE_PIN32_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
 	switch (rx_pin_num) {
 		case 31: CORE_PIN31_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break; // PTC3
-		case 63: CORE_PIN63_CONFIG = 0; break;
+		case 63: CORE_PIN63_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break; // PTE5 
 	}
 	switch (tx_pin_num & 127) {
 		case 32: CORE_PIN32_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break; // PTC4
-		case 62: CORE_PIN62_CONFIG = 0; break;
+		case 62: CORE_PIN62_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); break; // PTE4 
 	}
 	rx_buffer_head = 0;
 	rx_buffer_tail = 0;
