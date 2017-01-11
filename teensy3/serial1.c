@@ -232,8 +232,8 @@ void serial_end(void)
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	} else if (CORE_PIN28_CONFIG & PORT_PCR_MUX(3)) {
 		CORE_PIN28_CONFIG = 0;
-  }
 #endif
+  }
 #endif
 }
 
