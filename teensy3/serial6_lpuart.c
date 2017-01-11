@@ -293,7 +293,7 @@ int serial6_set_cts(uint8_t pin)
 	if (!(SIM_SCGC2 & SIM_SCGC2_LPUART0)) return 0;
 	if (pin == 55) {
 		CORE_PIN55_CONFIG = PORT_PCR_MUX(5) | PORT_PCR_PE; // weak pulldown
-	else if(pin == 56) {
+	} else if(pin == 56) {
 		CORE_PIN56_CONFIG = PORT_PCR_MUX(5) | PORT_PCR_PE; // weak pulldown
 	} else {
 		UART5_MODEM &= ~UART_MODEM_TXCTSE;
