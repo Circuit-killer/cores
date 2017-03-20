@@ -98,6 +98,8 @@ static uint8_t tx_pin_num = 32;
 
 void serial4_begin(uint32_t divisor)
 {
+	uint32_t cfg;
+	
 	SIM_SCGC4 |= SIM_SCGC4_UART3;	// turn on clock, TODO: use bitband
 	rx_buffer_head = 0;
 	rx_buffer_tail = 0;
@@ -108,9 +110,14 @@ void serial4_begin(uint32_t divisor)
 		case 31: CORE_PIN31_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(3); break;
 		case 63: CORE_PIN63_CONFIG = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_PFE | PORT_PCR_MUX(3); break;
 	}
-	switch (tx_pin_num) {
-		case 32: CORE_PIN32_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3); break;
-		case 62: CORE_PIN62_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3); break;
+	if (tx_pin_num & 128) {
+		cfg = PORT_PCR_DSE | PORT_PCR_ODE;
+	} else {
+		cfg = PORT_PCR_DSE | PORT_PCR_SRE;
+	}
+	switch (tx_pin_num & 127) {
+		case 32: CORE_PIN32_CONFIG = cfg | PORT_PCR_MUX(3); break;
+		case 62: CORE_PIN62_CONFIG = cfg | PORT_PCR_MUX(3); break;
 	}
 	UART3_BDH = (divisor >> 13) & 0x1F;
 	UART3_BDL = (divisor >> 5) & 0xFF;
@@ -188,7 +195,7 @@ void serial4_set_tx(uint8_t pin, uint8_t opendrain)
 	if (pin == tx_pin_num) return;
 	if ((SIM_SCGC4 & SIM_SCGC4_UART3)) {
 		switch (tx_pin_num & 127) {
-			case 32:  CORE_PIN32_CONFIG = 0; break; // PTB11
+			case 32: CORE_PIN32_CONFIG = 0; break; // PTB11
 			case 62: CORE_PIN62_CONFIG = 0; break;
 		}
 		if (opendrain) {
@@ -197,8 +204,8 @@ void serial4_set_tx(uint8_t pin, uint8_t opendrain)
 			cfg = PORT_PCR_DSE | PORT_PCR_SRE;
 		}
 		switch (pin & 127) {
-			case 32:  CORE_PIN32_CONFIG = cfg | PORT_PCR_MUX(3); break;
-			case 62: CORE_PIN62_CONFIG = cfg | PORT_PCR_MUX(3);; break;
+			case 32: CORE_PIN32_CONFIG = cfg | PORT_PCR_MUX(3); break;
+			case 62: CORE_PIN62_CONFIG = cfg | PORT_PCR_MUX(3); break;
 		}
 	}
 	tx_pin_num = pin;
