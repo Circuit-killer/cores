@@ -94,8 +94,9 @@ static volatile uint8_t rx_buffer_tail = 0;
 #endif
 #if defined(KINETISK)
 static uint8_t rx_pin_num = 9;
-static uint8_t tx_pin_num = 10;
 #endif
+static uint8_t tx_pin_num = 10;
+
 
 // UART0 and UART1 are clocked by F_CPU, UART2 is clocked by F_BUS
 // UART0 has 8 byte fifo, UART1 and UART2 have 1 byte buffer
@@ -244,7 +245,6 @@ void serial2_set_transmit_pin(uint8_t pin)
 
 void serial2_set_tx(uint8_t pin, uint8_t opendrain)
 {
-	#if defined(KINETISK)
 	uint32_t cfg;
 
 	if (opendrain) pin |= 128;
@@ -273,7 +273,6 @@ void serial2_set_tx(uint8_t pin, uint8_t opendrain)
 		}
 	}
 	tx_pin_num = pin;
-	#endif
 }
 
 void serial2_set_rx(uint8_t pin)
